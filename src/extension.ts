@@ -1,23 +1,29 @@
 "use strict";
 import * as vscode from "vscode";
 import { Commands } from "./commands";
+import { AvailableCommands } from './consts';
 
 const commands = new Commands();
 
 export function activate(context: vscode.ExtensionContext) {
 
-    const run = vscode.commands.registerCommand("verilog.run", (fileUri: vscode.Uri) => {
-        commands.executeCommand(fileUri);
-    });
+  const run = vscode.commands.registerCommand("verilogrunner.run", (fileUri: vscode.Uri) => {
+    commands.executeCommand(fileUri, AvailableCommands.runFile);
+  });
 
-    const stop = vscode.commands.registerCommand("verilog.stop", () => {
-        commands.stopCommand();
-    });
+  const compileAll = vscode.commands.registerCommand("verilogrunner.compileAll", (fileUri: vscode.Uri) => {
+    commands.executeCommand(fileUri, AvailableCommands.compileAll);
+  });
 
-    context.subscriptions.push(run);
-    context.subscriptions.push(commands);
+  const stop = vscode.commands.registerCommand("verilogrunner.stop", () => {
+    commands.stopCommand();
+  });
+
+  context.subscriptions.push(run);
+  context.subscriptions.push(compileAll);
+  context.subscriptions.push(commands);
 }
 
 export function deactivate() {
-    commands.stopCommand();
+  commands.stopCommand();
 }

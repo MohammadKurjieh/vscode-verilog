@@ -1,9 +1,9 @@
 {
-    "name": "verilog",
-    "displayName": "Verilog HDL",
+    "name": "verilogrunner",
+    "displayName": "Verilog Compiler & Runner",
     "description": "Verilog HDL Language Support for Visual Studio Code.",
-    "version": "0.0.6",
-    "publisher": "leafvmaple",
+    "version": "0.0.7",
+    "publisher": "mohammadkurjieh",
     "icon": "images/icon.png",
     "engines": {
         "vscode": "^1.17.0"
@@ -14,57 +14,74 @@
     "license": "MIT",
     "repository": {
         "type": "git",
-        "url": "https://github.com/leafvmaple/vscode-verilog"
+        "url": "https://github.com/MohammadKurjieh/vscode-verilog"
     },
     "activationEvents": [
-        "onCommand:verilog.run",
-        "onCommand:verilog.stop"
+        "onCommand:verilogrunner.run",
+        "onCommand:verilogrunner.compileAll",
+        "onCommand:verilogrunner.stop"
     ],
     "main": "./out/extension",
     "contributes": {
         "commands": [
             {
-                "command": "verilog.run",
-                "title": "Verilog: Run Verilog HDL Code",
-                "icon": "images/icon.png"
+                "command": "verilogrunner.run",
+                "title": "Verilog: Compile & Run",
+                "icon": "$(notebook-execute)"
             },
             {
-                "command": "verilog.stop",
+                "command": "verilogrunner.compileAll",
+                "title": "Verilog: Compile All Files",
+                "icon": "$(notebook-kernel-select)"
+            },
+            {
+                "command": "verilogrunner.stop",
                 "title": "Verilog: Stop Running"
             }
         ],
         "menus": {
             "editor/title": [
                 {
-                    "when": "resourceLangId == verilog && config.verilog.showRunIconInEditorTitleMenu",
-                    "command": "verilog.run",
+                    "when": "resourceLangId == verilog && config.verilogrunner.showRunIconInEditorTitleMenu",
+                    "command": "verilogrunner.run",
+                    "group": "navigation"
+                },
+                {
+                    "when": "resourceLangId == verilog && config.verilogrunner.showRunIconInEditorTitleMenu",
+                    "command": "verilogrunner.compileAll",
                     "group": "navigation"
                 }
             ]
         },
         "configuration": {
             "type": "object",
-            "title": "Verilog configuration",
+            "title": "Verilog Runner configuration",
             "properties": {
-                "verilog.showRunIconInEditorTitleMenu": {
+                "verilogrunner.showRunIconInEditorTitleMenu": {
                     "type": "boolean",
                     "default": true,
-                    "description": "Whether to show 'Run Verilog HDL' icon in editor title menu.",
+                    "description": "Whether to show 'Run Verilog' icon in editor title menu.",
                     "scope": "resource"
                 },
-                "verilog.runInTerminal": {
+                "verilogrunner.openVCD": {
+                    "type": "boolean",
+                    "default": true,
+                    "description": "(DEV) Whether to open the vcd file in editor when done.",
+                    "scope": "resource"
+                },
+                "verilogrunner.runInTerminal": {
                     "type": "boolean",
                     "default": false,
                     "description": "Whether to run code in Integrated Terminal.",
                     "scope": "resource"
                 },
-                "verilog.clearPreviousOutput": {
+                "verilogrunner.clearPreviousOutput": {
                     "type": "boolean",
-                    "default": false,
+                    "default": true,
                     "description": "Whether to clear previous output before each run.",
                     "scope": "resource"
                 },
-                "verilog.preserveFocus": {
+                "verilogrunner.preserveFocus": {
                     "type": "boolean",
                     "default": true,
                     "description": "Whether to preserve focus on code editor after code run is triggered.",
@@ -81,7 +98,8 @@
                 ],
                 "extensions": [
                     ".v",
-                    ".vh"
+                    ".vh",
+                    ".sv"
                 ],
                 "configuration": "./language-configuration.json"
             }
@@ -90,7 +108,7 @@
             {
                 "language": "verilog",
                 "scopeName": "source.verilog",
-                "path": "./syntaxes/verilog.tmLanguage.json"
+                "path": "./syntaxes/verilog_runner.tmLanguage.json"
             }
         ],
         "snippets": [
@@ -107,8 +125,8 @@
         "postinstall": "node ./node_modules/vscode/bin/install"
     },
     "dependencies": {
-        "tree-kill": "^1.1.0",
-        "iconv-lite": "^0.4.24"
+        "iconv-lite": "^0.4.24",
+        "tree-kill": "^1.2.2"
     },
     "devDependencies": {
         "@types/mocha": "^2.2.42",

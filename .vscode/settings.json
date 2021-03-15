@@ -1,0 +1,7 @@
+{
+  "workbench.colorCustomizations": {
+    "[Material Theme Darker]": {
+      "statusBar.debuggingBackground": "#212121"
+    }
+  }
+}

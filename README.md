@@ -1,10 +1,19 @@
+# A Fork Of This [Extension](https://github.com/leafvmaple/vscode-verilog)
+
+## Major new Features:
+* Compile all verilog files in a directory
+* Output moved to ./build
+
+<br />
+<br />
+
 # Verilog Language README
 
 The Visual Studio Code extenstion for Verilog HDL Language support.
 
 ## Installation
 
-Install it from [VS Code Marketplace](https://marketplace.visualstudio.com/items/itemName=leafvmaple.verilog)
+Install it from [VS Code Marketplace](https://marketplace.visualstudio.com/items?itemName=MohammadKurjieh.verilogrunner)
 
 ## Run Code
 
@@ -20,11 +29,21 @@ Install it from [VS Code Marketplace](https://marketplace.visualstudio.com/items
 
     Use Icarus Verilog to run the current code.
 
+* **Compile all Verilog HDL Files in a directory**
+
+    Use Icarus Verilog to all the files in the directory.
+
 * **Stop Running**
 
     Stop Running Code.
 
 ## Release Notes
+
+### Version 0.0.7
+
+* Added Compile All.
+* Generated files are moved to ./build
+* Minor ts types improvements
 
 ### Version 0.0.6
 

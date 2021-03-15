@@ -1,5 +1,11 @@
 # Verilog Change Log
 
+### [0.0.6] 2021-03-16
+
+* Added Compile All.
+* Generated files are moved to ./build
+* Minor ts types improvements
+
 ## [0.0.6] 2019-06-25
 
 * Remove redundant code.
