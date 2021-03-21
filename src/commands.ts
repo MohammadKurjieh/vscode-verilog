@@ -1,34 +1,35 @@
 "use strict";
-import { basename, dirname } from "path";
-import * as vscode from "vscode";
-import { AvailableCommands } from './consts';
 import fs = require('fs');
+import * as vscode from "vscode";
+import { Configs } from "./configs";
+import { AltPathCommands, AvailableCommands } from './consts';
+import { basename, extname, dirname, join } from "path";
 
 export class Commands implements vscode.Disposable {
   private LANGUAGE_NAME = "Verilog";
-  private EXTENTSION_NAME = "verilogrunner";
-  private COMPILE_COMMANDS = "iverilog -o build/{fileName}.out {fileName}";
-  private RUN_COMMANDS = "vvp {fileName}.out";
 
-  private outputChannel: vscode.OutputChannel;
-  private terminal: vscode.Terminal;
-  private config: vscode.WorkspaceConfiguration;
-  private document: vscode.TextDocument;
   private cwd: string;
+  private config: Configs;
   private isRunning: boolean;
-  private isCompiling: boolean;
   private isSuccess: boolean;
-  private compileProcess;
-  private executeProcess;
+  private isCompiling: boolean;
+  private terminal: vscode.Terminal;
+  private document: vscode.TextDocument;
+  private outputChannel: vscode.OutputChannel;
 
-  constructor() {
+  private compileProcess: any;
+  private executeProcess: any;
+
+  constructor(config: Configs) {
+    this.config = config;
     this.outputChannel = vscode.window.createOutputChannel(this.LANGUAGE_NAME);
     this.terminal = vscode.window.createTerminal(this.LANGUAGE_NAME);
   }
 
+
   public async executeCommand(fileUri: vscode.Uri, command: AvailableCommands) {
     if (this.isRunning) {
-      vscode.window.showInformationMessage("Code is already running!");
+      vscode.window.showInformationMessage("Already running!");
       return;
     }
 
@@ -38,36 +39,32 @@ export class Commands implements vscode.Disposable {
     } else if (editor) {
       this.document = editor.document;
     } else {
-      vscode.window.showInformationMessage("No code found or selected.");
+      vscode.window.showInformationMessage("No supported file found or selected.");
       return;
     }
 
-    const fileName = basename(this.document.fileName);
     this.cwd = dirname(this.document.fileName);
-    this.config = vscode.workspace.getConfiguration(this.EXTENTSION_NAME);
-    const runInTerminal = this.config.get<boolean>("runInTerminal");
-    const clearPreviousOutput = this.config.get<boolean>("clearPreviousOutput");
-    const preserveFocus = this.config.get<boolean>("preserveFocus");
-    const openVCD = this.config.get<boolean>("openVCD");
+    const extName = extname(this.document.fileName);
+    const fileName = basename(this.document.fileName, extName);
 
     if (command === AvailableCommands.runFile) {
-      this.runFile(runInTerminal, fileName, clearPreviousOutput, preserveFocus, openVCD);
+      this.runFile(fileName, extName);
     } else if (AvailableCommands.compileAll) {
-      this.compileAll(runInTerminal, this.cwd, clearPreviousOutput, preserveFocus)
+      this.compileAll(this.cwd)
     }
   }
 
-  public runFile(runInTerminal: boolean, fileName: string, clearPreviousOutput: boolean, preserveFocus: boolean, openVCD: boolean): void {
-    if (runInTerminal) {
-      this.executeRunInTerminal(fileName, clearPreviousOutput, preserveFocus);
+  private runFile(fileName: string, extName: string): void {
+    if (this.config.runInTerminal) {
+      this.executeRunInTerminal(fileName, extName);
     } else {
-      this.executeRunInOutputChannel(fileName, clearPreviousOutput, preserveFocus, openVCD);
+      this.executeRunInOutputChannel(fileName, extName);
     }
   }
 
-  public async compileAll(runInTerminal: boolean, directory: string, clearPreviousOutput: boolean, preserveFocus: boolean): Promise<void> {
-    if (clearPreviousOutput) {
-      if (runInTerminal) {
+  private async compileAll(dir: string): Promise<void> {
+    if (this.config.clearPreviousOutput) {
+      if (this.config.runInTerminal) {
         vscode.commands.executeCommand("workbench.action.terminal.clear");
       } else {
         this.outputChannel.clear();
@@ -77,48 +74,51 @@ export class Commands implements vscode.Disposable {
     this.outputChannel.appendLine("");
     const startTime = new Date();
 
-    for (const file of fs.readdirSync(directory)) {
-      if (file.match(/^(.*)+(.v|.vh|.sv)$/)) {
-        if (runInTerminal) {
-          this.executeCompileInTerminal(file, false, preserveFocus);
-        } else {
-          await this.executeCompileInOutputChannel(file, false, preserveFocus, true);
-        }
+    var files = fs.readdirSync(dir);
+    files = files.filter(f => this.config.exts.indexOf(extname(f)) !== -1);
+
+    for (const file of files) {
+      const ext = extname(file);
+      if (this.config.runInTerminal) {
+        this.executeCompileInTerminal(file.replace(ext, ""), ext, false);
+      } else {
+        await this.executeCompileInOutputChannel(file.replace(ext, ""), ext, true);
       }
-    };
+    }
+
     const endTime = new Date();
     const elapsedTime = (endTime.getTime() - startTime.getTime()) / 1000;
     this.outputChannel.appendLine(`[Done] Compiling Done in ${elapsedTime} seconds`);
     this.outputChannel.appendLine("");
   }
 
-  public executeRunInTerminal(fileName: string, clearPreviousOutput: boolean, preserveFocus: boolean): void {
-    this.executeCompileInTerminal(fileName, clearPreviousOutput, preserveFocus);
+  private executeRunInTerminal(fileName: string, extName: string): void {
+    this.executeCompileInTerminal(fileName, extName);
     this.terminal.sendText(`cd build`);
-    this.terminal.sendText(this.RUN_COMMANDS.replace(/{fileName}/g, fileName));
+    this.terminal.sendText(this.runCommand(fileName));
   }
 
-  public executeCompileInTerminal(fileName: string, clearPreviousOutput: boolean, preserveFocus: boolean): void {
-    if (clearPreviousOutput) {
-      vscode.commands.executeCommand("workbench.action.terminal.clear");
-    }
-    this.terminal.show(preserveFocus);
+  private executeCompileInTerminal(fileName: string, extName: string, bulk: boolean = false): void {
+
+    if (this.config.clearPreviousOutput && !bulk) vscode.commands.executeCommand("workbench.action.terminal.clear");
+
+    this.terminal.show(this.config.preserveFocus);
     this.terminal.sendText(`cd "${this.cwd}"`);
     this.terminal.sendText(`mkdir build`);
-    this.terminal.sendText(this.COMPILE_COMMANDS.replace(/{fileName}/g, fileName));
+    this.terminal.sendText(this.compileCommand(fileName, extName, bulk));
   }
 
-  public async executeRunInOutputChannel(fileName: string, clearPreviousOutput: boolean, preserveFocus: boolean, openVCD: boolean): Promise<void> {
-    
-    await this.executeCompileInOutputChannel(fileName, clearPreviousOutput, preserveFocus);
+  private async executeRunInOutputChannel(fileName: string, extName: string): Promise<void> {
+
+    await this.executeCompileInOutputChannel(fileName, extName);
 
     this.isRunning = true;
     const exec = require("child_process").exec;
     const startTime = new Date();
     this.outputChannel.appendLine(`[Run] ${basename(fileName)}`);
     return new Promise<void>((res, _rej) => {
-      
-      this.executeProcess = exec(this.RUN_COMMANDS.replace(/{fileName}/g, fileName), { cwd: this.cwd + '/build' });
+
+      this.executeProcess = exec(this.runCommand(fileName), { cwd: this.cwd + '/build' });
 
       this.executeProcess.stdout.on("data", (data: string) => {
         this.outputChannel.append(this.indent(`${data}`));
@@ -134,38 +134,31 @@ export class Commands implements vscode.Disposable {
         const elapsedTime = (endTime.getTime() - startTime.getTime()) / 1000;
         this.outputChannel.appendLine(`[Done] exit with code=${executeCode} in ${elapsedTime} seconds`);
         this.outputChannel.appendLine("");
-        // if (openVCD) {
-        //   vscode.workspace.openTextDocument(this.cwd + `\\build\\${fileName.replace(/\.[^/.]+$/, "")}.vcd`).then(doc => {
-        //     vscode.window.showTextDocument(doc);
-        //   });
-        // }
         res();
       });
     });
   }
 
-  public async executeCompileInOutputChannel(fileName: string, clearPreviousOutput: boolean, preserveFocus: boolean, bulk = false): Promise<void> {
+  private async executeCompileInOutputChannel(fileName: string, extName: string, bulk: boolean = false): Promise<void> {
     return new Promise<void>((res, _rej) => {
       const indent = bulk ? "  " : "";
-      if (clearPreviousOutput) {
-        this.outputChannel.clear();
-      }
+
+      if (this.config.clearPreviousOutput && !bulk) this.outputChannel.clear();
+
       this.isRunning = true;
       this.isCompiling = true;
       this.isSuccess = true;
-      this.outputChannel.show(preserveFocus);
-      this.outputChannel.appendLine(`${indent}[Compile] ${basename(fileName)}`);
+      this.outputChannel.show(this.config.preserveFocus);
+      this.outputChannel.appendLine(`${indent}[Compile] ${fileName}${extName}`);
       const exec = require("child_process").exec;
       const startTime = new Date();
 
       exec('mkdir build', { cwd: this.cwd });
-      this.compileProcess = exec(this.COMPILE_COMMANDS.replace(/{fileName}/g, fileName), { cwd: this.cwd });
+      this.compileProcess = exec(this.compileCommand(fileName, extName, bulk), { cwd: this.cwd });
 
       this.compileProcess.stdout.on("data", (data: string) => {
         this.outputChannel.append(this.indent(`${data}`, bulk));
-        if (data.match("I give up.")) {
-          this.isSuccess = false;
-        }
+        if (data.match("I give up.")) this.isSuccess = false;
       });
 
       this.compileProcess.stderr.on("data", (data: string) => {
@@ -208,9 +201,35 @@ export class Commands implements vscode.Disposable {
     this.stopCommand();
   }
 
-  public indent(string: string, bulk = false) {
+  private indent(string: string, bulk = false) {
     var split = string.slice(0, -1).split('\n');
     split = split.map(l => (bulk ? '    ' : '  ') + l);
     return split.join('\n');
+  }
+
+  private pathSelector(exec: string, ext: string, bulk: boolean) {
+    if ((this.config.altPathCmd === AltPathCommands.All || (bulk && this.config.altPathCmd === AltPathCommands.BulkCompile) || (!bulk && this.config.altPathCmd === AltPathCommands.SingleCompile)) && this.config.altPath !== undefined) {
+      if (this.config.altPath.endsWith(ext)) {
+        return `"${this.config.altPath}"`;
+      } else {
+        return `"${join(this.config.altPath, `${exec}${ext}`)}"`;
+      }
+    } else {
+      return exec;
+    }
+  }
+
+  private compileCommand(fileName: string, extName: string, bulk: boolean): string {
+    var COMPILE_COMMANDS = " -o \"build/{fileName}{outExt}\" \"{fileName}{ext}\" " + this.config.flags;
+    COMPILE_COMMANDS = this.pathSelector('iverilog', '.exe', bulk) + COMPILE_COMMANDS;
+
+    return COMPILE_COMMANDS.replace(/{fileName}/g, fileName).replace(/{ext}/g, extName).replace(/{outExt}/, this.config.outExt);
+  }
+
+  private runCommand(fileName: string): string {
+    var RUN_COMMANDS = " \"{fileName}{outExt}\"";
+    RUN_COMMANDS = this.pathSelector('vvp', '.exe', false) + RUN_COMMANDS;
+
+    return RUN_COMMANDS.replace(/{fileName}/g, fileName).replace(/{outExt}/, this.config.outExt);
   }
 }

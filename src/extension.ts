@@ -1,11 +1,14 @@
 "use strict";
 import * as vscode from "vscode";
 import { Commands } from "./commands";
+import { Configs } from "./configs";
 import { AvailableCommands } from './consts';
 
-const commands = new Commands();
+const configs = new Configs();
+const commands = new Commands(configs);
 
 export function activate(context: vscode.ExtensionContext) {
+  configs.updateConfig();
 
   const run = vscode.commands.registerCommand("verilogrunner.run", (fileUri: vscode.Uri) => {
     commands.executeCommand(fileUri, AvailableCommands.runFile);
@@ -19,9 +22,11 @@ export function activate(context: vscode.ExtensionContext) {
     commands.stopCommand();
   });
 
-  context.subscriptions.push(run);
-  context.subscriptions.push(compileAll);
-  context.subscriptions.push(commands);
+  const configChange = vscode.workspace.onDidChangeConfiguration(_event => {
+    configs.updateConfig();
+  });
+
+  context.subscriptions.concat([configChange, run, compileAll]);
 }
 
 export function deactivate() {
