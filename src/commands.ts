@@ -104,7 +104,11 @@ export class Commands implements vscode.Disposable {
 
     this.terminal.show(this.config.preserveFocus);
     this.terminal.sendText(`cd "${this.cwd}"`);
-    this.terminal.sendText(`mkdir build`);
+
+    if (!fs.existsSync(join(this.cwd, '/build'))) {
+      this.terminal.sendText(`mkdir build`);
+    }
+
     this.terminal.sendText(this.compileCommand(fileName, extName, bulk));
   }
 
@@ -153,7 +157,10 @@ export class Commands implements vscode.Disposable {
       const exec = require("child_process").exec;
       const startTime = new Date();
 
-      exec('mkdir build', { cwd: this.cwd });
+      if (!fs.existsSync(join(this.cwd, '/build'))) {
+        exec('mkdir build', { cwd: this.cwd });
+      }
+      
       this.compileProcess = exec(this.compileCommand(fileName, extName, bulk), { cwd: this.cwd });
 
       this.compileProcess.stdout.on("data", (data: string) => {
@@ -220,7 +227,7 @@ export class Commands implements vscode.Disposable {
   }
 
   private compileCommand(fileName: string, extName: string, bulk: boolean): string {
-    var COMPILE_COMMANDS = " -o \"build/{fileName}{outExt}\" \"{fileName}{ext}\" " + this.config.flags;
+    var COMPILE_COMMANDS = ` ${this.config.flags} -o "build/{fileName}{outExt}" "{fileName}{ext}"`;
     COMPILE_COMMANDS = this.pathSelector('iverilog', '.exe', bulk) + COMPILE_COMMANDS;
 
     return COMPILE_COMMANDS.replace(/{fileName}/g, fileName).replace(/{ext}/g, extName).replace(/{outExt}/, this.config.outExt);
