@@ -16,6 +16,7 @@ export class Commands implements vscode.Disposable {
   private terminal: vscode.Terminal;
   private document: vscode.TextDocument;
   private outputChannel: vscode.OutputChannel;
+  private closedTerminal: boolean = true;
 
   private compileProcess: any;
   private executeProcess: any;
@@ -23,7 +24,11 @@ export class Commands implements vscode.Disposable {
   constructor(config: Configs) {
     this.config = config;
     this.outputChannel = vscode.window.createOutputChannel(this.LANGUAGE_NAME);
-    this.terminal = vscode.window.createTerminal(this.LANGUAGE_NAME);
+    this.openTerminal();
+    vscode.window.onDidCloseTerminal(() => {
+      // console.log('test');
+      this.closedTerminal = true;
+    });
   }
 
 
@@ -51,6 +56,13 @@ export class Commands implements vscode.Disposable {
       this.runFile(fileName, extName);
     } else if (AvailableCommands.compileAll) {
       this.compileAll(this.cwd)
+    }
+  }
+
+  openTerminal() {
+    if (this.closedTerminal) {
+      this.terminal = vscode.window.createTerminal(this.LANGUAGE_NAME);
+      this.closedTerminal = false;
     }
   }
 
@@ -93,6 +105,7 @@ export class Commands implements vscode.Disposable {
   }
 
   private executeRunInTerminal(fileName: string, extName: string): void {
+    this.openTerminal();
     this.executeCompileInTerminal(fileName, extName);
     this.terminal.sendText(`cd build`);
     this.terminal.sendText(this.runCommand(fileName));
@@ -160,7 +173,7 @@ export class Commands implements vscode.Disposable {
       if (!fs.existsSync(join(this.cwd, '/build'))) {
         exec('mkdir build', { cwd: this.cwd });
       }
-      
+
       this.compileProcess = exec(this.compileCommand(fileName, extName, bulk), { cwd: this.cwd });
 
       this.compileProcess.stdout.on("data", (data: string) => {
@@ -201,6 +214,8 @@ export class Commands implements vscode.Disposable {
       } else {
         kill(this.executeProcess.pid);
       }
+    } else {
+      this.terminal.dispose();
     }
   }
 
