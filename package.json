@@ -2,7 +2,7 @@
     "name": "verilogrunner",
     "displayName": "Verilog Compiler & Runner",
     "description": "Verilog HDL Language Support for Visual Studio Code.",
-    "version": "0.0.8",
+    "version": "0.1.0",
     "publisher": "mohammadkurjieh",
     "icon": "images/icon.png",
     "engines": {
