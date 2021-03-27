@@ -3,6 +3,10 @@
 ## Major new Features:
 * Compile all verilog files in a directory
 * Output moved to ./build
+* Dynamic File Extensions (Input and Output)
+* Custom Compiling Flags
+* Ability to change the directory of iverilog
+
 
 <br />
 <br />
@@ -38,6 +42,16 @@ Install it from [VS Code Marketplace](https://marketplace.visualstudio.com/items
     Stop Running Code.
 
 ## Release Notes
+
+### Version 0.1.0
+* Added Dynamic Input File Extension Support
+* Added Dynamic Output Extension Support
+* Added Alternate IVerilog Path
+* Added Dynamic Path Choosing For Every Command
+* Stop Command Can Now Stop The Terminal
+* Added The Ability To Have Spaces Inside The File Names
+* The Terminal Reopens When Running After Closing It
+* Increased Version Number
 
 ### Version 0.0.7
 
