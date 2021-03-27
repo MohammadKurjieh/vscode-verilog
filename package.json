@@ -2,7 +2,7 @@
     "name": "verilogrunner",
     "displayName": "Verilog Compiler & Runner",
     "description": "Verilog HDL Language Support for Visual Studio Code.",
-    "version": "0.0.7",
+    "version": "0.1.0",
     "publisher": "mohammadkurjieh",
     "icon": "images/icon.png",
     "engines": {
@@ -17,6 +17,7 @@
         "url": "https://github.com/MohammadKurjieh/vscode-verilog"
     },
     "activationEvents": [
+        "onStartupFinished",
         "onCommand:verilogrunner.run",
         "onCommand:verilogrunner.compileAll",
         "onCommand:verilogrunner.stop"
@@ -42,12 +43,12 @@
         "menus": {
             "editor/title": [
                 {
-                    "when": "resourceLangId == verilog && config.verilogrunner.showRunIconInEditorTitleMenu",
+                    "when": "config.verilogrunner.Verilog.showRunIconInEditorTitleMenu && resourceExtname in verilogrunner.Verilog.Supported",
                     "command": "verilogrunner.run",
                     "group": "navigation"
                 },
                 {
-                    "when": "resourceLangId == verilog && config.verilogrunner.showRunIconInEditorTitleMenu",
+                    "when": "config.verilogrunner.Verilog.showRunIconInEditorTitleMenu && resourceExtname in verilogrunner.Verilog.Supported",
                     "command": "verilogrunner.compileAll",
                     "group": "navigation"
                 }
@@ -55,37 +56,81 @@
         },
         "configuration": {
             "type": "object",
-            "title": "Verilog Runner configuration",
+            "title": "Verilog Runner Configuration",
             "properties": {
-                "verilogrunner.showRunIconInEditorTitleMenu": {
+                "verilogrunner.Verilog.showRunIconInEditorTitleMenu": {
                     "type": "boolean",
                     "default": true,
-                    "description": "Whether to show 'Run Verilog' icon in editor title menu.",
+                    "description": "Show 'Run Verilog' icon in editor title menu.",
                     "scope": "resource"
                 },
-                "verilogrunner.openVCD": {
+                "verilogrunner.Verilog.alternativePathForIverilog": {
+                    "type": "string",
+                    "default": "",
+                    "description": "Alternative Verilog Directory",
+                    "scope": "resource"
+                },
+                "verilogrunner.Verilog.commandsToUseAlternativePath": {
+                    "type": "string",
+                    "default": "None",
+                    "description": "Alternative Verilog Directory",
+                    "scope": "resource",
+                    "enum": ["None", "Single Compile", "Bulk Compile", "All"],
+                    "enumDescriptions": [
+                      "Use the defualt compiler for all compilations",
+                      "Use the alternate compiler for single compilations (Run Command)",
+                      "Use the alternate compiler for bulk compilations (Compile All Command)",
+                      "Use the alternate compiler for all compilations"
+                    ]
+                },
+                "verilogrunner.Verilog.Output's Extension": {
+                    "type": "string",
+                    "default": ".out",
+                    "description": "The output extension of the generated file",
+                    "scope": "resource"
+                },
+                "verilogrunner.Verilog.Custom Flags": {
+                    "type": "string",
+                    "default": "",
+                    "description": "The additional flags that will be used while compiling",
+                    "scope": "resource"
+                },
+                "verilogrunner.Verilog.openVCD": {
                     "type": "boolean",
                     "default": true,
-                    "description": "(DEV) Whether to open the vcd file in editor when done.",
+                    "description": "(DEV) Open the vcd file in editor when done.",
                     "scope": "resource"
                 },
-                "verilogrunner.runInTerminal": {
+                "verilogrunner.Verilog.runInTerminal": {
                     "type": "boolean",
                     "default": false,
-                    "description": "Whether to run code in Integrated Terminal.",
+                    "description": "Run code in Integrated Terminal.",
                     "scope": "resource"
                 },
-                "verilogrunner.clearPreviousOutput": {
+                "verilogrunner.Verilog.clearPreviousOutput": {
                     "type": "boolean",
                     "default": true,
-                    "description": "Whether to clear previous output before each run.",
+                    "description": "Clear previous output before each run.",
                     "scope": "resource"
                 },
-                "verilogrunner.preserveFocus": {
+                "verilogrunner.Verilog.preserveFocus": {
                     "type": "boolean",
                     "default": true,
-                    "description": "Whether to preserve focus on code editor after code run is triggered.",
+                    "description": "Preserve focus on code editor after code run is triggered.",
                     "scope": "resource"
+                },
+                "verilogrunner.Verilog.Supported Extensions": {
+                    "type": "array",
+                    "scope": "resource",
+                    "description": "List of file extensions that will use this extension.",
+                    "default": [
+                        ".v",
+                        ".vh",
+                        ".sv"
+                    ],
+                    "items": {
+                        "type": "string"
+                    }
                 }
             }
         },
